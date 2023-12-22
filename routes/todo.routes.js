@@ -1,50 +1,51 @@
 const express = require('express');
+const db = require('../db');
 
 const router = express.Router();
 
-router.get('/', async (req, res) => {
-
+router.get('/todo', async (req, res) => {
     try {
-        const data = db.query('SELECT * FROM todo;');
+        const todo = await db.query('SELECT * FROM todo;');  
         res.status(200).json({todo: data.rows});
     }
     catch(error) {
         console.log(error);
+        res.status(500).json({ error: 'Internal Server Error' });
     }
-    
+
 });
 
-router.post('/', (req, res) => {
+router.post('/todo', async (req, res) => {
     console.log(req.body);
     const { task } = req.body;
 
     try {
         const data = await db.query('INSERT INTO todo (task) VALUES ($1);', [task]);
-        console.log(data);
         res.status(200).json({message: `${data.rowCount} row inserted.`});
     } 
     catch (error) {
         console.log(error);
+        res.status(500).json({ error: 'Internal Server Error' });
     } 
 
 });
 
-router.delete('/', async (req, res) => {
+router.delete('/todo', async (req, res) => {
     const {id} = req;
-    const data = await db.query("SELECT * FROM todo WHERE id = $1;", [id]);
+    
+    try {
+        const data = await db.query("SELECT * FROM todo WHERE id = $1;", [id]);
 
-    if(data.rows.length === 0) {
-        res.json({message: "there no such task"});
-    } else {
-        try {
+        if (data.rows.length === 0) {
+            res.status(404).json({ message: "No such task found" });
+        } else {
             const result = await db.query("DELETE FROM todo WHERE id = $1;", [id]);
-            res.status(200).json({message: `${result.rowCount} row was deleted.`});
+            res.status(200).json({ message: `${result.rowCount} row was deleted.` });
         }
-        catch(error) {
-            console.log(error);
-        }
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ error: 'Internal Server Error' });
     }
 });
 
-
-module.exports = ; 
+module.exports = router; 
